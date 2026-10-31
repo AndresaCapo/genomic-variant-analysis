@@ -52,7 +52,7 @@ nomes de cromossomos compatíveis.
 
 Na pasta do projeto:
 
-    sudo docker build -t desafio-dasa-bioinfo:1.2 .
+    sudo docker build -t desafio-dasa-bioinfo:1.3 .
 
 O arquivo .dockerignore evita incluir os dados genéticos
 no contexto de construção.
@@ -70,7 +70,7 @@ Executar:
       --user "$(id -u):$(id -g)" \
       --mount type=bind,source="$(pwd)",target=/dados,readonly \
       --mount type=bind,source="$(pwd)/saida_docker",target=/saida \
-      desafio-dasa-bioinfo:1.2 \
+      desafio-dasa-bioinfo:1.3 \
       --vcf /dados/desafio.vcf.gz \
       --bam /dados/desafio.bam \
       --saida /saida/resultados_variantes.csv
@@ -150,10 +150,10 @@ Executar os testes dentro do Docker:
     sudo docker run --rm \
       --network none \
       --entrypoint python3 \
-      desafio-dasa-bioinfo:1.2 \
+      desafio-dasa-bioinfo:1.3 \
       /app/test_regressao.py
 
-Foram aprovados cinco testes automatizados.
+Foram aprovados dez testes automatizados, incluindo verificacoes de qualidade, fragmentos discordantes e delecoes com soft clipping.
 
 A execução local e a execução Docker produziram
 arquivos CSV idênticos no conjunto utilizado.

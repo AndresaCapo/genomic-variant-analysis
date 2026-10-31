@@ -95,5 +95,75 @@ class TestesRegressao(unittest.TestCase):
             pasta.cleanup()
 
 
+
+class TestesAdicionais(unittest.TestCase):
+
+    def test_snp_baixa_qualidade(self):
+        leituras = [
+            ("frag1", "A", [(0, 1)], "I"),
+            ("frag2", "G", [(0, 1)], "!"),
+        ]
+        pasta, caminho = criar_bam(leituras)
+        try:
+            with pysam.AlignmentFile(caminho, "rb") as bam:
+                r = contar_snp(bam, "chrTeste", 100, "A", "G")
+            self.assertEqual(r["alinhamentos"].get("REF", 0), 1)
+            self.assertEqual(r["alinhamentos"].get("ALT", 0), 0)
+        finally:
+            pasta.cleanup()
+
+    def test_snp_fragmento_discordante(self):
+        leituras = [
+            ("frag1", "A", [(0, 1)], "I"),
+            ("frag1", "G", [(0, 1)], "I"),
+        ]
+        pasta, caminho = criar_bam(leituras)
+        try:
+            with pysam.AlignmentFile(caminho, "rb") as bam:
+                r = contar_snp(bam, "chrTeste", 100, "A", "G")
+            self.assertEqual(r["fragmentos"]["DISCORDANTE"], 1)
+        finally:
+            pasta.cleanup()
+
+    def test_delecao_com_softclip(self):
+        leituras = [
+            ("frag1", "TTC", [(4, 2), (0, 1), (2, 2)], "III"),
+        ]
+        pasta, caminho = criar_bam(leituras)
+        try:
+            with pysam.AlignmentFile(caminho, "rb") as bam:
+                r = contar_delecao(bam, "chrTeste", 100, "CAG", "C")
+            self.assertEqual(r["alinhamentos"]["ALT"], 1)
+        finally:
+            pasta.cleanup()
+
+    def test_delecao_baixa_qualidade(self):
+        leituras = [
+            ("frag1", "C", [(0, 1), (2, 2)], "!"),
+        ]
+        pasta, caminho = criar_bam(leituras)
+        try:
+            with pysam.AlignmentFile(caminho, "rb") as bam:
+                r = contar_delecao(bam, "chrTeste", 100, "CAG", "C")
+            self.assertEqual(
+                r["alinhamentos"]["NAO_CLASSIFICADO"], 1
+            )
+        finally:
+            pasta.cleanup()
+
+    def test_delecao_fragmento_discordante(self):
+        leituras = [
+            ("frag1", "CAG", [(0, 3)], "III"),
+            ("frag1", "C", [(0, 1), (2, 2)], "I"),
+        ]
+        pasta, caminho = criar_bam(leituras)
+        try:
+            with pysam.AlignmentFile(caminho, "rb") as bam:
+                r = contar_delecao(bam, "chrTeste", 100, "CAG", "C")
+            self.assertEqual(r["fragmentos"]["DISCORDANTE"], 1)
+        finally:
+            pasta.cleanup()
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

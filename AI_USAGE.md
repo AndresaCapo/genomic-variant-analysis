@@ -51,8 +51,10 @@ Foram realizadas as seguintes verificações:
 - Comparação byte a byte dos CSVs produzidos localmente
   e dentro do Docker.
 
-O arquivo permanente test_regressao.py contém cinco testes
-automatizados que foram executados com sucesso.
+O arquivo permanente test_regressao.py contém dez testes
+automatizados que foram executados com sucesso, incluindo
+verificacoes de qualidade, fragmentos discordantes e
+delecoes com soft clipping.
 
 ## 5. Resultados obtidos
 
