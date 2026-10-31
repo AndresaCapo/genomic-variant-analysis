@@ -1,0 +1,7 @@
+*
+!Dockerfile
+!.dockerignore
+!analise_variantes.py
+!suporte_alelico.py
+!exportar_resultados.py
+!test_regressao.py

@@ -1,0 +1,13 @@
+# Ignorar todos os arquivos por padrao
+*
+
+# Permitir somente arquivos do projeto
+!.gitignore
+!.dockerignore
+!Dockerfile
+!README.md
+!AI_USAGE.md
+!analise_variantes.py
+!suporte_alelico.py
+!exportar_resultados.py
+!test_regressao.py
