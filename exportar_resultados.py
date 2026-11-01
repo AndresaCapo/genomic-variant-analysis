@@ -1,3 +1,5 @@
+"""Exportacao estruturada de variantes e evidencias obtidas no BAM."""
+
 import argparse
 import csv
 
@@ -15,10 +17,53 @@ COLUNAS = [
     "outro_alinhamentos", "nao_classificado_alinhamentos",
     "ref_fragmentos", "alt_fragmentos",
     "discordante_fragmentos", "nao_classificado_fragmentos",
+    "confirmacao_bam",
 ]
 
 
+def avaliar_confirmacao_bam(linha):
+    """Classifica a compatibilidade operacional do suporte com o genotipo.
+    Exige FILTER=PASS. Para heterozigotos, requer pelo menos tres
+    QNAMEs REF e tres ALT; para 1/1, requer tres ALT e proporcao
+    ALT minima de 90% entre REF e ALT classificados.
+    O resultado nao representa confirmacao clinica independente."""
+    status = linha.get("status", "")
+
+    if status == "SEM_COBERTURA_INICIAL":
+        return "NAO_AVALIAVEL_SEM_COBERTURA"
+
+    if status != "SUPORTE_AVALIADO":
+        return "NAO_AVALIAVEL_TIPO"
+
+    if linha.get("filter") != "PASS":
+        return "NAO_AVALIAVEL_FILTRO_VCF"
+
+    gt = str(linha.get("gt", "")).replace("|", "/")
+    ref = int(linha.get("ref_fragmentos") or 0)
+    alt = int(linha.get("alt_fragmentos") or 0)
+
+    if gt in ("0/1", "1/0"):
+        compativel = ref >= 3 and alt >= 3
+
+    elif gt == "1/1":
+        total = ref + alt
+        compativel = (
+            alt >= 3
+            and total > 0
+            and alt / total >= 0.90
+        )
+
+    else:
+        return "NAO_AVALIAVEL_GENOTIPO"
+
+    if compativel:
+        return "SUPORTE_COMPATIVEL_COM_GENOTIPO"
+
+    return "SUPORTE_INSUFICIENTE"
+
+
 def classificar_tipo(ref, alts):
+    """Classifica a alteracao a partir dos alelos REF e ALT do VCF."""
     if not alts:
         return "SEM_ALT"
 
@@ -46,12 +91,16 @@ def classificar_tipo(ref, alts):
 
 
 def formatar_valores(valores):
+    """Converte valores do VCF para representacao textual no CSV."""
     if valores is None:
         return ""
     return ",".join("." if x is None else str(x) for x in valores)
 
 
 def exportar(vcf_path, bam_path, saida):
+    """Seleciona variantes dos genes-alvo e gera o CSV de resultados.
+    Calcula a cobertura inicial, avalia o suporte quando aplicavel
+    e registra os status e a classificacao computacional."""
     total = 0
 
     with pysam.VariantFile(vcf_path) as vcf, \
@@ -152,6 +201,7 @@ def exportar(vcf_path, bam_path, saida):
                                 f.get("NAO_CLASSIFICADO", 0)
                             )
 
+                linha["confirmacao_bam"] = avaliar_confirmacao_bam(linha)
                 escritor.writerow(linha)
                 total += 1
 
@@ -160,8 +210,14 @@ def exportar(vcf_path, bam_path, saida):
 
 
 def main():
+    """Processa os argumentos da CLI e permite consultar a versao."""
     parser = argparse.ArgumentParser(
         description="Exporta resultados da analise genetica para CSV"
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version="%(prog)s 1.4.0"
     )
     parser.add_argument("--vcf", required=True)
     parser.add_argument("--bam", required=True)

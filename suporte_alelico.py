@@ -1,7 +1,12 @@
+"""Avaliacao de suporte alelico em alinhamentos de sequenciamento."""
+
 from collections import Counter, defaultdict
 
 
 def contar_snp(bam, chrom, pos, ref, alt, min_mapq=20, min_baseq=20):
+    """Conta o suporte REF e ALT para um SNP bialelico.
+    Aplica filtros MAPQ e BaseQ e apresenta contagens por alinhamento
+    e por QNAME. Observacoes excluidas podem nao integrar as contagens."""
     if len(ref) != 1 or len(alt) != 1:
         raise ValueError("Esta funcao aceita apenas SNPs bialelicos.")
 
@@ -57,6 +62,11 @@ def contar_snp(bam, chrom, pos, ref, alt, min_mapq=20, min_baseq=20):
 
 
 def contar_delecao(bam, chrom, pos, ref, alt, min_mapq=20, min_baseq=20):
+    """Avalia o suporte a uma delecao simples bialelica.
+    Examina a sequencia e as operacoes CIGAR dos alinhamentos,
+    considerando filtros de qualidade e a base ancora.
+    Exige delecao no CIGAR na posicao e no tamanho esperados.
+    Distingue suporte REF, ALT e evidencias nao classificaveis."""
     if len(alt) != 1 or len(ref) <= 1 or not ref.startswith(alt):
         raise ValueError("A funcao aceita apenas delecoes simples bialelicas.")
 
@@ -81,6 +91,7 @@ def contar_delecao(bam, chrom, pos, ref, alt, min_mapq=20, min_baseq=20):
         if read.query_sequence is None or read.query_qualities is None:
             continue
 
+        # Preserva QNAMEs sem evidencia classificavel.
         fragmentos[read.query_name]
 
         mapa = {
@@ -115,6 +126,7 @@ def contar_delecao(bam, chrom, pos, ref, alt, min_mapq=20, min_baseq=20):
             ):
                 delecao = True
 
+            # Apenas operacoes que consomem referencia avancam o cursor.
             if op in (0, 2, 3, 7, 8):
                 cursor += tamanho
 

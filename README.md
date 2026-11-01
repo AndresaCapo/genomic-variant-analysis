@@ -38,6 +38,33 @@ Regiões utilizadas:
 As coordenadas estão fixadas no código e devem ser revisadas
 caso seja utilizada outra versão da anotação gênica.
 
+### Origem das coordenadas genômicas
+
+Após a identificação da montagem GRCh38 nos arquivos
+fornecidos, foram consultadas as anotações do NCBI Gene
+(RefSeq RS_2025_08, GRCh38.p14) para definir os intervalos
+genômicos dos três genes de interesse.
+
+Referências:
+
+- TGFBR2: NCBI Gene ID 7048
+  https://www.ncbi.nlm.nih.gov/gene/7048
+  chr3:30606356-30694142
+
+- HEXA: NCBI Gene ID 3073
+  https://www.ncbi.nlm.nih.gov/gene/3073
+  chr15:72340924-72376014
+
+- FANCA: NCBI Gene ID 2175
+  https://www.ncbi.nlm.nih.gov/gene/2175
+  chr16:89737549-89816647
+
+As coordenadas representam intervalos de anotacao genica
+na referencia GRCh38.p14, e nao posicoes obtidas do VCF.
+
+As variantes foram identificadas separadamente no VCF
+fornecido pela DASA, utilizando esses intervalos.
+
 ## 5. Entradas
 
 O programa recebe:
@@ -52,12 +79,22 @@ nomes de cromossomos compatíveis.
 
 Na pasta do projeto:
 
-    sudo docker build -t desafio-dasa-bioinfo:1.3 .
+    sudo docker build -t desafio-dasa-bioinfo:1.4.0 .
 
 O arquivo .dockerignore evita incluir os dados genéticos
 no contexto de construção.
 
 ## 7. Execução
+
+### Identificação da versão
+
+Para consultar a versão da aplicação:
+
+    sudo docker run --rm --network none desafio-dasa-bioinfo:1.4.0 --version
+
+Resultado esperado:
+
+    exportar_resultados.py 1.4.0
 
 Criar a pasta de saída:
 
@@ -70,7 +107,7 @@ Executar:
       --user "$(id -u):$(id -g)" \
       --mount type=bind,source="$(pwd)",target=/dados,readonly \
       --mount type=bind,source="$(pwd)/saida_docker",target=/saida \
-      desafio-dasa-bioinfo:1.3 \
+      desafio-dasa-bioinfo:1.4.0 \
       --vcf /dados/desafio.vcf.gz \
       --bam /dados/desafio.bam \
       --saida /saida/resultados_variantes.csv
@@ -143,6 +180,37 @@ Cobertura na posição inicial:
 Das quatro variantes com cobertura, três são SNPs e
 uma é uma deleção simples.
 
+### Classificacao do suporte computacional no BAM
+
+O CSV inclui a coluna `confirmacao_bam`, que apresenta uma avaliacao
+operacional da compatibilidade entre o suporte observado no BAM e
+o genotipo registrado no VCF.
+
+Para a classificacao `SUPORTE_COMPATIVEL_COM_GENOTIPO`, sao exigidos:
+
+- FILTER=PASS no VCF.
+- Genotipo heterozigoto (0/1, 1/0 ou equivalente faseado):
+  pelo menos 3 QNAMEs REF e 3 QNAMEs ALT.
+- Genotipo homozigoto alternativo (1/1):
+  pelo menos 3 QNAMEs ALT e proporcao ALT de pelo menos 90%
+  entre os fragmentos classificados como REF ou ALT.
+
+Outras classificacoes possiveis:
+
+- `SUPORTE_INSUFICIENTE`: evidencia abaixo dos criterios definidos.
+- `NAO_AVALIAVEL_SEM_COBERTURA`: ausencia de cobertura inicial no BAM.
+- `NAO_AVALIAVEL_TIPO`: tipo de variante sem avaliacao implementada.
+- `NAO_AVALIAVEL_FILTRO_VCF`: registro com FILTER diferente de PASS.
+- `NAO_AVALIAVEL_GENOTIPO`: genotipo fora do escopo da regra.
+
+Os criterios acima foram definidos operacionalmente para este desafio.
+Nao constituem limiares clinicos validados. A contagem por QNAME
+nao garante independencia molecular, e a classificacao nao equivale
+a confirmacao clinica ou laboratorial independente.
+
+A profundidade inicial no BAM e as contagens REF/ALT utilizam filtros
+diferentes; portanto, seus valores nao precisam coincidir.
+
 ## 11. Testes
 
 Executar os testes dentro do Docker:
@@ -150,10 +218,10 @@ Executar os testes dentro do Docker:
     sudo docker run --rm \
       --network none \
       --entrypoint python3 \
-      desafio-dasa-bioinfo:1.3 \
+      desafio-dasa-bioinfo:1.4.0 \
       /app/test_regressao.py
 
-Foram aprovados dez testes automatizados, incluindo verificacoes de qualidade, fragmentos discordantes e delecoes com soft clipping.
+Foram aprovados 21 testes automatizados no Ubuntu e no Docker. A suite contempla classificacao de variantes, suporte alelico, qualidade dos alinhamentos, fragmentos discordantes, delecoes, criterios de confirmacao computacional e um teste de integracao com VCF e BAM sinteticos, incluindo a exportacao completa do CSV.
 
 A execução local e a execução Docker produziram
 arquivos CSV idênticos no conjunto utilizado.

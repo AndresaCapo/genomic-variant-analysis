@@ -1,3 +1,5 @@
+"""Inspecao de variantes nos genes FANCA, HEXA e TGFBR2."""
+
 import argparse
 
 import pysam
@@ -12,6 +14,8 @@ GENES = {
 
 
 def obter_cobertura(bam, variante):
+    """Calcula a profundidade na posicao inicial da variante no BAM.
+    A medida utiliza criterios diferentes da contagem de suporte alelico."""
     cobertura = bam.count_coverage(
         variante.contig,
         variante.pos - 1,
@@ -24,6 +28,8 @@ def obter_cobertura(bam, variante):
 
 
 def analisar(vcf_path, bam_path):
+    """Percorre as regioes dos genes-alvo no VCF e examina a cobertura
+    e as evidencias disponiveis nos alinhamentos do BAM."""
     with pysam.VariantFile(vcf_path) as vcf, \
          pysam.AlignmentFile(bam_path, "rb") as bam:
 
@@ -134,6 +140,7 @@ def analisar(vcf_path, bam_path):
             print(f"  Tipos ainda nao suportados: {nao_suportadas}")
 
 def main():
+    """Processa os argumentos da interface de linha de comando."""
     parser = argparse.ArgumentParser(
         description="Analise de variantes em TGFBR2, HEXA e FANCA (GRCh38)"
     )
