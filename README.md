@@ -1,4 +1,4 @@
-# Desafio de Bioinformática — Análise de Variantes Genéticas
+# # Desafio de Bioinformática — Análise de Variantes Genéticas
 
 ## 1. Objetivo
 
@@ -261,5 +261,67 @@ a integridade do conjunto original completamente confirmada.
 O desenvolvimento contou com assistência de inteligência
 artificial para elaboração, revisão e testes do código.
 
-As atividades e limitações dessa assistência serão
+As atividades e limitações dessa assistência estão
 documentadas separadamente no arquivo AI_USAGE.md.
+
+## 15. Fundamentação metodológica e validação
+
+### Qualidade dos alinhamentos: MAPQ e BaseQ
+
+Foram adotados MAPQ >= 20 e BaseQ >= 20 para a avaliação do
+suporte alélico. Na escala Phred, Q20 corresponde a uma
+probabilidade estimada de erro de 1%.
+
+MAPQ representa a confiança no posicionamento do alinhamento,
+enquanto BaseQ representa a qualidade estimada da chamada
+de uma base. Esses limiares são critérios operacionais deste
+projeto e não constituem limites clínicos universalmente validados.
+
+### Profundidade de cobertura e suporte alélico
+
+A profundidade inicial no BAM e as contagens REF/ALT são
+medidas distintas. A cobertura é calculada na posição inicial
+da variante, enquanto o suporte alélico considera filtros
+adicionais de qualidade e classificação dos alelos.
+
+Consequentemente, REF + ALT pode ser diferente de DP BAM.
+
+### Identificação de deleções pelo CIGAR
+
+O CIGAR descreve as operações de alinhamento de uma leitura
+contra a referência. A operação D indica bases presentes
+na referência e ausentes na leitura.
+
+Para deleções simples, o algoritmo verifica a base de
+ancoragem e a posição e extensão esperadas da deleção.
+Representações alternativas podem não ser reconhecidas.
+
+### Agrupamento por QNAME
+
+Os alinhamentos são agrupados pelo identificador QNAME para
+reduzir a contagem duplicada de evidências provenientes de
+leituras pareadas sobrepostas. Evidências incompatíveis
+podem ser classificadas como discordantes.
+
+QNAME não corresponde necessariamente a moléculas independentes.
+
+### Reprodutibilidade computacional
+
+O repositório foi clonado em um diretório independente e a
+imagem Docker foi construída novamente sem utilizar cache.
+
+Os 21 testes automatizados foram aprovados. O processamento
+dos arquivos VCF e BAM produziu 52 registros de variantes.
+
+A comparação dos arquivos CSV demonstrou identidade byte a byte
+entre o resultado reproduzido e o obtido anteriormente.
+
+### Limites da validação
+
+Os testes realizados demonstram o funcionamento computacional
+nos cenários avaliados, mas não estabelecem validade clínica.
+
+O uso diagnóstico exigiria validação adicional com materiais
+de referência, conjuntos independentes, avaliação de
+sensibilidade, especificidade, precisão e reprodutibilidade,
+além de critérios formais de controle de qualidade.
